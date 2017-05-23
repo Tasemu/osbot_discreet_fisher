@@ -14,15 +14,17 @@ public class main extends Script {
 	private String thread = "https://osbot.org/forum/topic/58775";
 	private NPC target;
 	private boolean isDropping = false;
-	private String fishAction = "Net";
-	private String fishingTools = "Small fishing net";
+	private String fishAction = "Lure";
+	private String fishingTools = "Fly fishing rod";
 	private Position targetLastPosition;
+	private long startTime;
 
 	@Override
 	public void onStart() {
 		log("Welcome to " + this.getName() + " v" + this.getVersion());
 		log("Report any issues and bugs here: " + this.thread);
 		this.getExperienceTracker().start(Skill.FISHING);
+		this.startTime = System.currentTimeMillis();
 	}
 
 	private enum State {
@@ -52,7 +54,7 @@ public class main extends Script {
 		switch (getState()) {
 		case DROP:
 			log("dropping fish");
-			this.getInventory().dropAllExcept(this.fishingTools);
+			this.getInventory().dropAllExcept(this.fishingTools, "Feather");
 			this.isDropping = true;
 			this.target = null;
 			
@@ -107,7 +109,7 @@ public class main extends Script {
 	}
 
 	private boolean finishedDropping() {
-		return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTools);
+		return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTools, "Feather");
 	}
 	
 	private boolean isFishing() {
@@ -119,8 +121,17 @@ public class main extends Script {
 	}
 	
 	private boolean isReadyToFish() {
-		return !this.myPlayer().isAnimating() && !this.isDropping && this.target == null;
+		return !this.myPlayer().isAnimating() &&
+			   !this.isDropping &&
+			   this.target == null &&
+			   !this.myPlayer().isMoving();
 	}
+	
+	public final String formatTime(final long ms){
+        long s = ms / 1000, m = s / 60, h = m / 60;
+        s %= 60; m %= 60; h %= 24;
+        return String.format("%02d:%02d:%02d", h, m, s);
+    }
 	
 	@Override
 	public void onExit() {
@@ -129,12 +140,14 @@ public class main extends Script {
 
 	@Override
 	public void onPaint(Graphics2D g) {
+		final long runTime = System.currentTimeMillis() - this.startTime;
 		g.setColor(Color.WHITE);
 		g.drawString(this.getName() + " v" + this.getVersion(), 10, 25);
 		g.drawString("Status: " + this.getState().toString().toLowerCase() + "ing", 10, 40);
 		g.drawString("Fishing XP: " + this.getExperienceTracker().getGainedXP(Skill.FISHING), 10, 55);
 		g.drawString("Fishing lvls gained: " + this.getExperienceTracker().getGainedLevels(Skill.FISHING), 10, 70);
 		g.drawString("Fishing lvl: " + this.getSkills().getStatic(Skill.FISHING), 10, 85);
+		g.drawString("Running for: " + this.formatTime(runTime), 10, 100);
 	}
 
 }
