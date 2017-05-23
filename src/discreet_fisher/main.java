@@ -15,7 +15,7 @@ public class main extends Script {
 	private NPC target;
 	private boolean isDropping = false;
 	private String fishAction = "Net";
-	private String fishingTool = "Small fishing net";
+	private String fishingTools = "Small fishing net";
 	private Position targetLastPosition;
 
 	@Override
@@ -52,7 +52,7 @@ public class main extends Script {
 		switch (getState()) {
 		case DROP:
 			log("dropping fish");
-			this.getInventory().dropAllExcept(this.fishingTool);
+			this.getInventory().dropAllExcept(this.fishingTools);
 			this.isDropping = true;
 			this.target = null;
 			
@@ -107,7 +107,7 @@ public class main extends Script {
 	}
 
 	private boolean finishedDropping() {
-		return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTool);
+		return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTools);
 	}
 	
 	private boolean isFishing() {
@@ -133,6 +133,8 @@ public class main extends Script {
 		g.drawString(this.getName() + " v" + this.getVersion(), 10, 25);
 		g.drawString("Status: " + this.getState().toString().toLowerCase() + "ing", 10, 40);
 		g.drawString("Fishing XP: " + this.getExperienceTracker().getGainedXP(Skill.FISHING), 10, 55);
+		g.drawString("Fishing lvls gained: " + this.getExperienceTracker().getGainedLevels(Skill.FISHING), 10, 70);
+		g.drawString("Fishing lvl: " + this.getSkills().getStatic(Skill.FISHING), 10, 85);
 	}
 
 }
