@@ -2,6 +2,7 @@ package discreet_fisher;
 
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.NPC;
+import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
@@ -21,6 +22,7 @@ public class main extends Script {
 	public void onStart() {
 		log("Welcome to " + this.getName() + " v" + this.getVersion());
 		log("Report any issues and bugs here: " + this.thread);
+		this.getExperienceTracker().start(Skill.FISHING);
 	}
 
 	private enum State {
@@ -30,15 +32,15 @@ public class main extends Script {
 	};
 
 	private State getState() {		
-		if (this.myPlayer().isAnimating() && this.target != null) {
+		if (this.isFishing()) {
 			return State.WAIT;
 		}
 		
-		if (this.getInventory().isFull() && !this.isDropping) {
+		if (this.isReadyToDrop()) {
 			return State.DROP;
 		}
 		
-		if (!this.myPlayer().isAnimating() && !this.isDropping && this.target == null) {
+		if (this.isReadyToFish()) {
 			return State.FISH;
 		}
 		
@@ -108,6 +110,18 @@ public class main extends Script {
 		return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTool);
 	}
 	
+	private boolean isFishing() {
+		return this.myPlayer().isAnimating() && this.target != null;
+	}
+	
+	private boolean isReadyToDrop() {
+		return this.getInventory().isFull() && !this.isDropping;
+	}
+	
+	private boolean isReadyToFish() {
+		return !this.myPlayer().isAnimating() && !this.isDropping && this.target == null;
+	}
+	
 	@Override
 	public void onExit() {
 		log("Thanks for running " + this.getName() + "!");
@@ -116,7 +130,9 @@ public class main extends Script {
 	@Override
 	public void onPaint(Graphics2D g) {
 		g.setColor(Color.WHITE);
-		g.drawString(this.getState().toString().toLowerCase() + "ing", 10, 40);
+		g.drawString(this.getName() + " v" + this.getVersion(), 10, 25);
+		g.drawString("Status: " + this.getState().toString().toLowerCase() + "ing", 10, 40);
+		g.drawString("Fishing XP: " + this.getExperienceTracker().getGainedXP(Skill.FISHING), 10, 55);
 	}
 
 }
