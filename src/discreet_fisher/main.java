@@ -18,6 +18,7 @@ public class main extends Script {
 	private String fishingTools = "Fly fishing rod";
 	private Position targetLastPosition;
 	private long startTime;
+	private String status;
 
 	@Override
 	public void onStart() {
@@ -25,15 +26,21 @@ public class main extends Script {
 		log("Report any issues and bugs here: " + this.thread);
 		this.getExperienceTracker().start(Skill.FISHING);
 		this.startTime = System.currentTimeMillis();
+		this.status = "Initializing";
 	}
 
 	private enum State {
 		FISH,
 		DROP,
-		WAIT
+		WAIT,
+		MOVE
 	};
 
-	private State getState() {		
+	private State getState() {
+		if (this.isMovingToFishingSpot()) {
+			return State.MOVE;
+		}
+		
 		if (this.isFishing()) {
 			return State.WAIT;
 		}
@@ -52,15 +59,19 @@ public class main extends Script {
 	@Override
 	public int onLoop() throws InterruptedException {
 		switch (getState()) {
+		case MOVE:
+			this.status = "Moving to fishing spot";
+			
+			break;
 		case DROP:
-			log("dropping fish");
+			this.status = "Dropping fish";
 			this.getInventory().dropAllExcept(this.fishingTools, "Feather");
 			this.isDropping = true;
 			this.target = null;
 			
 			break;
 		case FISH:
-			log("fishing");
+			this.status = "Fishing";
 			this.target = this.getNpcs().closest("Fishing spot");
 			this.targetLastPosition = target.getPosition();
 			this.isDropping = false;
@@ -78,12 +89,13 @@ public class main extends Script {
 			
 			break;
 		case WAIT:
+			this.status = "Waiting...";
 			
 			if (this.getDialogues().isPendingContinuation()) {
 				this.getDialogues().clickContinue();
 			}
 			
-			if (this.fishingSpotGone() || this.targetHasMoved()) {
+			if (this.targetHasDespawned() || this.targetHasMoved()) {
 				this.target = null;
 			}
 			
@@ -99,12 +111,13 @@ public class main extends Script {
 	
 	private boolean targetHasMoved() {
 		return this.target != null &&
+			   this.target.exists() &&
 			   this.targetLastPosition != null &&
 			   this.targetLastPosition.getX() == this.target.getX() &&
 			   this.targetLastPosition.getY() == this.target.getY();
 	}
 	
-	private boolean fishingSpotGone() {
+	private boolean targetHasDespawned() {
 		return this.target != null && !this.target.exists();
 	}
 
@@ -116,14 +129,18 @@ public class main extends Script {
 		return this.myPlayer().isAnimating() && this.target != null;
 	}
 	
+	private boolean isMovingToFishingSpot() {
+		return !this.targetHasDespawned() && !this.isFishing() && this.myPlayer().isMoving();
+	}
+	
 	private boolean isReadyToDrop() {
 		return this.getInventory().isFull() && !this.isDropping;
 	}
 	
 	private boolean isReadyToFish() {
-		return !this.myPlayer().isAnimating() &&
-			   !this.isDropping &&
+		return !this.isDropping &&
 			   this.target == null &&
+			   !this.myPlayer().isAnimating() &&
 			   !this.myPlayer().isMoving();
 	}
 	
@@ -143,7 +160,7 @@ public class main extends Script {
 		final long runTime = System.currentTimeMillis() - this.startTime;
 		g.setColor(Color.WHITE);
 		g.drawString(this.getName() + " v" + this.getVersion(), 10, 25);
-		g.drawString("Status: " + this.getState().toString().toLowerCase() + "ing", 10, 40);
+		g.drawString("Status: " + this.status, 10, 40);
 		g.drawString("Fishing XP: " + this.getExperienceTracker().getGainedXP(Skill.FISHING), 10, 55);
 		g.drawString("Fishing lvls gained: " + this.getExperienceTracker().getGainedLevels(Skill.FISHING), 10, 70);
 		g.drawString("Fishing lvl: " + this.getSkills().getStatic(Skill.FISHING), 10, 85);
