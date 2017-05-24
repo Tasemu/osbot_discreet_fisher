@@ -8,6 +8,7 @@ import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
 
 import java.awt.*;
+import javax.swing.*;
 
 @ScriptManifest(author = "Tasemu", info = "Simple Power Fisher", name = "Discreet Fisher", version = 1.0, logo = "")
 public class main extends Script {
@@ -15,10 +16,55 @@ public class main extends Script {
 	private NPC target;
 	private boolean isDropping = false;
 	private String fishAction = "Lure";
+	private boolean useBait = false;
 	private String fishingTools = "Fly fishing rod";
+	private String bait = "Feather";
 	private Position targetLastPosition;
 	private long startTime;
-	private String status;
+	private String status = "Initializing";
+	private JFrame gui;
+	private boolean started = false;
+	
+	private void createGUI() {
+		final int GUI_WIDTH = 350, GUI_HEIGHT = 300;
+        
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		        
+		final int gX = (int) (screenSize.getWidth() / 2) - (GUI_WIDTH / 2);
+		final int gY = (int) (screenSize.getHeight() / 2) - (GUI_HEIGHT / 2);
+		
+		this.gui = new JFrame("Discreet Fisher Options");
+		this.gui.setBounds(gX, gY, GUI_WIDTH, GUI_HEIGHT);
+		this.gui.setResizable(false);
+		
+		JPanel mainPanel = new JPanel();
+		mainPanel.setBackground(Color.DARK_GRAY);
+		mainPanel.setBounds(0, 0, GUI_WIDTH, GUI_HEIGHT / 2);
+		this.gui.add(mainPanel);
+		
+		JLabel fishTypeLabel = new JLabel("Select fishing type:");
+		fishTypeLabel.setForeground(Color.WHITE);
+		mainPanel.add(fishTypeLabel);
+		
+		JComboBox<String> fishingType = new JComboBox<>(new String[]{"Net", "Lure", "Box", "Harpoon"});
+		fishingType.addActionListener(e -> this.fishAction = fishingType.getSelectedItem().toString());
+		mainPanel.add(fishingType);
+		
+		JCheckBox useBaitCheckbox = new JCheckBox("Use Bait?");
+		useBaitCheckbox.setSelected(true);
+		useBaitCheckbox.addActionListener(e -> this.useBait = useBaitCheckbox.isSelected());
+		useBaitCheckbox.setForeground(Color.WHITE);
+		mainPanel.add(useBaitCheckbox);
+		
+		JButton startButton = new JButton("Start");
+		startButton.addActionListener(e -> {
+			this.started = true;
+			this.gui.setVisible(false);
+		});
+		mainPanel.add(startButton);
+		
+		this.gui.setVisible(true);
+	}
 
 	@Override
 	public void onStart() {
@@ -26,7 +72,7 @@ public class main extends Script {
 		log("Report any issues and bugs here: " + this.thread);
 		this.getExperienceTracker().start(Skill.FISHING);
 		this.startTime = System.currentTimeMillis();
-		this.status = "Initializing";
+		this.createGUI();
 	}
 
 	private enum State {
@@ -58,6 +104,12 @@ public class main extends Script {
 
 	@Override
 	public int onLoop() throws InterruptedException {
+		if (!this.started)
+			return 0;
+		
+		if (!this.getClient().isLoggedIn() && !this.myPlayer().isVisible())
+			return random(600, 1000);
+		
 		switch (getState()) {
 		case MOVE:
 			this.status = "Moving to fishing spot";
@@ -65,7 +117,13 @@ public class main extends Script {
 			break;
 		case DROP:
 			this.status = "Dropping fish";
-			this.getInventory().dropAllExcept(this.fishingTools, "Feather");
+			
+			if (this.useBait) {
+				this.getInventory().dropAllExcept(this.fishingTools, this.bait);
+			} else {
+				this.getInventory().dropAllExcept(this.fishingTools);
+			}
+				
 			this.isDropping = true;
 			this.target = null;
 			
@@ -95,6 +153,11 @@ public class main extends Script {
 				this.getDialogues().clickContinue();
 			}
 			
+			if (this.getInventory().getItem(this.bait) == null) {
+				log("Out of bait, quitting script.");
+				this.stop();
+			}
+			
 			if (this.targetHasDespawned() || this.targetHasMoved()) {
 				this.target = null;
 			}
@@ -122,7 +185,11 @@ public class main extends Script {
 	}
 
 	private boolean finishedDropping() {
-		return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTools, "Feather");
+		if (this.useBait) {
+			return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTools, this.bait);
+		} else {
+			return this.isDropping && this.getInventory().isEmptyExcept(this.fishingTools);
+		}
 	}
 	
 	private boolean isFishing() {
@@ -153,18 +220,24 @@ public class main extends Script {
 	@Override
 	public void onExit() {
 		log("Thanks for running " + this.getName() + "!");
+		if (this.gui != null) {
+			this.gui.setVisible(false);
+			this.gui.dispose();
+		}
 	}
 
 	@Override
 	public void onPaint(Graphics2D g) {
-		final long runTime = System.currentTimeMillis() - this.startTime;
-		g.setColor(Color.WHITE);
-		g.drawString(this.getName() + " v" + this.getVersion(), 10, 25);
-		g.drawString("Status: " + this.status, 10, 40);
-		g.drawString("Fishing XP: " + this.getExperienceTracker().getGainedXP(Skill.FISHING), 10, 55);
-		g.drawString("Fishing lvls gained: " + this.getExperienceTracker().getGainedLevels(Skill.FISHING), 10, 70);
-		g.drawString("Fishing lvl: " + this.getSkills().getStatic(Skill.FISHING), 10, 85);
-		g.drawString("Running for: " + this.formatTime(runTime), 10, 100);
+		if (this.started) {
+			final long runTime = System.currentTimeMillis() - this.startTime;
+			g.setColor(Color.WHITE);
+			g.drawString(this.getName() + " v" + this.getVersion(), 10, 25);
+			g.drawString("Status: " + this.status, 10, 40);
+			g.drawString("Fishing XP: " + this.getExperienceTracker().getGainedXP(Skill.FISHING), 10, 55);
+			g.drawString("Fishing lvls gained: " + this.getExperienceTracker().getGainedLevels(Skill.FISHING), 10, 70);
+			g.drawString("Fishing lvl: " + this.getSkills().getStatic(Skill.FISHING), 10, 85);
+			g.drawString("Running for: " + this.formatTime(runTime), 10, 100);
+		}
 	}
 
 }
