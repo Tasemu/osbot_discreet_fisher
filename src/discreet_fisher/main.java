@@ -17,6 +17,7 @@ public class main extends Script {
 	private boolean isDropping = false;
 	private String fishAction = "Lure";
 	private boolean useBait = false;
+	private String bankAction = "Drop";
 	private String fishingTools = "Fly fishing rod";
 	private String bait = "Feather";
 	private Position targetLastPosition;
@@ -40,10 +41,12 @@ public class main extends Script {
 		
 		JComboBox<String> comboBox = new JComboBox<String>();
 		comboBox.setModel(new DefaultComboBoxModel<String>(new String[] {"Net", "Lure", "Bait", "Cage", "Harpoon"}));
+		comboBox.addActionListener(e -> this.fishAction = comboBox.getSelectedItem().toString());
 		comboBox.setBounds(112, 14, 118, 27);
 		gui.getContentPane().add(comboBox);
 		
 		JCheckBox chckbxUseBait = new JCheckBox("Use Bait?");
+		chckbxUseBait.addActionListener(e -> this.useBait = chckbxUseBait.isSelected());
 		chckbxUseBait.setForeground(Color.WHITE);
 		chckbxUseBait.setBounds(16, 84, 128, 23);
 		gui.getContentPane().add(chckbxUseBait);
@@ -59,6 +62,16 @@ public class main extends Script {
 		rdbtnBankFish.setBounds(209, 84, 141, 23);
 		gui.getContentPane().add(rdbtnBankFish);
 		
+		rdbtnDropFish.addActionListener(e -> {
+			this.bankAction = "Drop";
+			rdbtnBankFish.setSelected(false);;
+		});
+		
+		rdbtnBankFish.addActionListener(e -> {
+			this.bankAction = "Bank";
+			rdbtnDropFish.setSelected(false);
+		});
+		
 		JLabel lblBaitType = new JLabel("Bait Type:");
 		lblBaitType.setForeground(Color.WHITE);
 		lblBaitType.setBounds(23, 56, 61, 16);
@@ -66,51 +79,19 @@ public class main extends Script {
 		
 		JComboBox<String> comboBox_1 = new JComboBox<String>();
 		comboBox_1.setModel(new DefaultComboBoxModel<String>(new String[] {"Feather", "Bait"}));
+		comboBox_1.addActionListener(e -> this.bait = comboBox_1.getSelectedItem().toString());
 		comboBox_1.setBounds(112, 52, 118, 27);
 		gui.getContentPane().add(comboBox_1);
 		
 		JButton btnStart = new JButton("Start");
+		btnStart.addActionListener(e -> {
+			this.started = true;
+			gui.setVisible(false);
+		});
 		btnStart.setBounds(16, 119, 117, 29);
 		gui.getContentPane().add(btnStart);
 		
-//		final int GUI_WIDTH = 350, GUI_HEIGHT = 300;
-//        
-//		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-//		        
-//		final int gX = (int) (screenSize.getWidth() / 2) - (GUI_WIDTH / 2);
-//		final int gY = (int) (screenSize.getHeight() / 2) - (GUI_HEIGHT / 2);
-//		
-//		this.gui = new JFrame("Discreet Fisher Options");
-//		this.gui.setBounds(gX, gY, GUI_WIDTH, GUI_HEIGHT);
-//		this.gui.setResizable(false);
-//		
-//		JPanel mainPanel = new JPanel();
-//		mainPanel.setBackground(Color.DARK_GRAY);
-//		mainPanel.setBounds(0, 0, GUI_WIDTH, GUI_HEIGHT / 2);
-//		this.gui.add(mainPanel);
-//		
-//		JLabel fishTypeLabel = new JLabel("Select fishing type:");
-//		fishTypeLabel.setForeground(Color.WHITE);
-//		mainPanel.add(fishTypeLabel);
-//		
-//		JComboBox<String> fishingType = new JComboBox<>(new String[]{"Net", "Lure", "Box", "Harpoon"});
-//		fishingType.addActionListener(e -> this.fishAction = fishingType.getSelectedItem().toString());
-//		mainPanel.add(fishingType);
-//		
-//		JCheckBox useBaitCheckbox = new JCheckBox("Use Bait?");
-//		useBaitCheckbox.setSelected(true);
-//		useBaitCheckbox.addActionListener(e -> this.useBait = useBaitCheckbox.isSelected());
-//		useBaitCheckbox.setForeground(Color.WHITE);
-//		mainPanel.add(useBaitCheckbox);
-//		
-//		JButton startButton = new JButton("Start");
-//		startButton.addActionListener(e -> {
-//			this.started = true;
-//			this.gui.setVisible(false);
-//		});
-//		mainPanel.add(startButton);
-//		
-//		this.gui.setVisible(true);
+		this.gui.setVisible(true);
 	}
 
 	@Override
